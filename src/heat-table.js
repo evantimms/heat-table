@@ -4,150 +4,90 @@ import * as d3 from 'd3'
 export default class HeatTable extends React.Component {
     constructor (props) {
         super(props)
-        this.state = {
-            /*
-            NEEDED PROPS:
-            - width, height
-            - gridsize
-            - BinsX, BinsY
-            - Color Spectrum
-            - Xvals,Yvals,ColorBy (frequency)
-            - colLabel
-            - rowLabel
-            - 
 
-            props.data should contains Xvals,Yvals and ColorBy
-            */
-            // ...props,
-            // data: { ...props.data }
+        this.state = { ...props }
+        this._renderHeatTable()
+    }
+
+    componentDidMount () {
+        this._renderHeatTable()
+    }
+
+    componentDidUpdate () {
+        this._renderHeatTable()
+    }
+
+    _getLabels (lower,upper, divisions) {
+        let toReturn = []
+        let mean = Math.ceil((lower+upper)/divisions)
+        for(let i = 0; i < divisions + 1; ++i){
+            toReturn.push(lower + i * mean)
         }
+        return toReturn
     }
 
-    componentDidMount() {
-        this._createChart()
-    }
-    
-    componentDidUpdate() {
-        this._createChart()
-    }
+    _renderHeatTable () {
+        const { margin, width, height, data, colors, bins, gridSize } = this.state
 
-    shouldComponentUpdate(nextProps, nextState) {
-        //do not render if image has not changed...
-        // return nextProps.data.image_data !== this.props.data.image_data
-    }
-    
-    
-    componentWillReceiveProps(nextProps) {
+        const xLabel = this.state.data.xGroupBy
+        const yLabel = this.state.data.yGroupBy
+        const xMax = Math.max.apply(null,this.state.data.xData)
+        const xMin = Math.min.apply(null,this.state.data.xData)
+        const yMax = Math.max.apply(null,this.state.data.yData)
+        const yMin = Math.min.apply(null,this.state.data.yData)
+        const colorByMin = Math.max.apply(null,this.state.data.frequency)
+        const colorByMax = Math.min.apply(null,this.state.data.frequency)
 
-    }
-
-    _createChart () {
-        const { xLabelNames, yLabelNames, margin, width, height, colors, gridSize, legendElementWidth, dataFile, buckets } = this.props
-        
-        const svg = d3.select(`#${this.props.id}-chart`)
+        // Create svg
+        const svg = d3.select('.heat-table')
                         .append('svg')
-                        .attr("width", width + margin.left + margin.right)
-                        .attr("height", height + margin.top + margin.bottom)
-                        .append("g")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                        .attr('width', width + margin.left + margin.right)
+                        .attr('height', height + margin.top + margin.bottom)
+                        .append('g')
+                        .attr('transform', `translate(${margin.left},${margin.top})`)
 
-        const xLabels = svg.selectAll('.xLabel')
-                            .data(xLabelNames)
-                            .enter()
-                            .append('text')
-                            .text((d) => d)
-                            .attr('x', 0)
-                            .attr('y', (d,i) => i * gridSize)
-                            .style('text-anchor', 'end')
-                            .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+        const chart = svg.append('g')
+                            .attr('transform', `translate(${margin}, ${margin})`)
         
-        const yLabels = svg.selectAll(".yLabel")
-                            .data(yLabelNames)
-                            .enter().append("text")
-                            .text(function(d) { return d; })
-                            .attr("x", function(d, i) { return i * gridSize; })
-                            .attr("y", 0)
-                            .style("text-anchor", "middle")
-                            .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+        const xLabels = this._getLabels(xMin,xMax,bins)
+        const yLabels = this._getLabels(yMin,yMax,bins)
+
+        const yScale = d3.scaleBand()
+                        .range([height,0])
+                        .domain(yLabels)
+                        
+        chart.append('g')
+                .call(d3.axisLeft(yScale))
+
+        const xScale = d3.scaleBand()
+                        .range([0,width])
+                        .domain(xLabels)
+                        .padding(0.2)
+
+        chart.append('g')
+                .attr('transform', `translate(0, ${height})`)
+                .call(d3.axisBottom(xScale))
         
-        const heatTableChart = (tsvFile) => {
-            d3.tsv(tsvFile,
-                        (d) => {
-                            return ({
-                                day: +d.day,
-                                hour: +d.hour,
-                                value: +d.value
-                            })
-                        },
-                        (error,data) => {
-                            // Define colorScale
-                            const colorScale = d3.scaleQuantile()
-                            .domain([0, buckets-1, d3.max(data, (d) => d.value)])
+        chart.append('g')
+            .attr('transform', `translate(0, ${height})`)
+
+        // colorScale
+        const colorScale = d3.scaleQuantile()
+                            .domain([colorByMin, colorByMax])
                             .range(colors)
 
-                            const cards = svg.selectAll('.hour')
-                                            .data(data, (d) => d.day + ':' + d.hour)
-                            
-                            cards.append('title')
+        //Cards 
+        const cards = svg.selectAll('.card')
+                            .data(data, (d) => d.xDat)        
 
-                            cards.enter().append('rect')
-                                        .attr("x", (d) => (d.hour - 1) * gridSize)
-                                        .attr("y", (d) => (d.day - 1) * gridSize )
-                                        .attr("rx", 4)
-                                        .attr("ry", 4)
-                                        .attr("class", "hour bordered")
-                                        .attr("width", gridSize)
-                                        .attr("height", gridSize)
-                                        .style("fill", colors[0])
-                            
-                            const legend = svg.selectAll(".legend")
-                                                .data([0].concat(colorScale.quantiles()), (d) => d);
 
-                            legend.enter().append("g")
-                                .attr("class", "legend");
-
-                            legend.append("rect")
-                                .attr("x", (d, i) => legendElementWidth * i )
-                                .attr("y", height)
-                                .attr("width", legendElementWidth)
-                                .attr("height", gridSize / 2)
-                                .style("fill", (d, i) => colors[i] );
-
-                            legend.append("text")
-                                .attr("class", "mono")
-                                .text((d) => "≥ " + Math.round(d))
-                                .attr("x", (d, i) => legendElementWidth * i )
-                                .attr("y", height + gridSize)
-
-                            legend.exit().remove()            
-                        })
-                    }            
-        heatTableChart(dataFile)
-
-        const dataSetPicker = d3.select('#dataset-picker').selectAll('.dataset-button')
-                            .data(dataFile)
-        
-        dataSetPicker.enter()
-                        .append('input')
-                        .attr("value", (d) => { return "Dataset " + d })
-                        .attr("type", "button")
-                        .attr("class", "dataset-button")
-                        .on("click", (d) => {
-                        heatTableChart(d);
-                        })
     }
 
     render () {
-        const style = {
-            width:this.props.width,
-            height:this.props.height
-        }
-        // const id = this.state.id
-        const classes = `${this.props.id} heat-table`
         return (
-            <div id={`${this.props.id}-chart`} className={classes} style={style}>
-                {this._createChart()}
+            <div className="heat-table">
+                {this._renderHeatTable()} 
             </div>
-        )       
+        )
     }
 }

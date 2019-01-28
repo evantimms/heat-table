@@ -1,6 +1,6 @@
 import React from 'react';
 // import HeatTable from './heat-table'
-import SecondaryHeatTable from './heat-table2'
+import HeatTable from './heat-table'
 
 const data = {
   xGroupBy: 'Well Cost',
@@ -44,7 +44,7 @@ class App extends React.Component {
           gridSize = {Math.floor(width / 24)}
           legendElementWidth = {gridSize*2}
         /> */}
-        <SecondaryHeatTable 
+        <HeatTable 
           margin={margin}
           width={width}
           height={height}
