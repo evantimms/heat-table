@@ -29,18 +29,17 @@ export default class HeatTable extends React.Component {
           )
         }
         data.push(newPoint)
-      }  
+      } 
       return data
     }
 
 
     _appendData (data, i, j){
       if (data[i][j]) return data[i][j]
+      return null
     }
 
-    _createBinsFromData (data, xBins, yBins, colorThreshold) {
-      
-
+    _createBinsFromData (data, xBins, yBins) {
       const toReturn = []
       for(let i = 0; i < xBins; ++i){
         for(let j = 0; j < yBins; ++j){
@@ -57,19 +56,20 @@ export default class HeatTable extends React.Component {
 
     _formatData (data, colorThreshold, bins) {
         const { xBins, yBins } = bins
+        // console.log(data)
 
         // calculate the threshold based on the value of the z axis
         // map everything, but only add the threshold if the data point is contained within that binning
-        let values = this._createBinsFromData(data, xBins, yBins, colorThreshold)
+        let values = this._createBinsFromData(data, xBins, yBins)
         const thresholdScale = d3.scaleThreshold()
         .domain(colorThreshold.map(d => d.value))
-        .range([0,1,2,3,4])
+        .range([0,1,2,3,4,5])
 
         let formattedData = values.map(d => {
           return {
             x: d.x,
             y: d.y,
-            z: thresholdScale(d.z !== undefined ? d.z: 0)
+            z: thresholdScale(d.z !== null ? d.z: 0)
           }
         })
         return formattedData
@@ -77,7 +77,7 @@ export default class HeatTable extends React.Component {
 
 
     _renderHeatTable () {
-        const { width, height, margin, thresholds, ranges, xAxisLabel, yAxisLabel, colorThreshold, bins, colors } = this.state 
+        const { width, height, margin, ranges, xAxisLabel, yAxisLabel, colorThreshold, bins } = this.state 
         const { xMin, xMax, yMin, yMax } = ranges
         const data = this.pretendBackEndRequest(ranges, bins)
         
@@ -112,12 +112,12 @@ export default class HeatTable extends React.Component {
           .attr("ry", 4)
           .attr('width', gridSizeX)
           .attr('height', gridSizeY)
-          .style('fill', colors[0])
+          .style('fill', colorThreshold[0].value)
           .attr('transform', `translate(${gridSizeX}, ${gridSizeY})`)
         
         cards
           .transition().duration(1000)
-          .style('fill', d => colors[d.z])
+          .style('fill', d => colorThreshold[d.z].color)
 
         const tableLengthX = gridSizeX * bins.xBins
         const tableLengthY = gridSizeY * bins.yBins
@@ -135,6 +135,7 @@ export default class HeatTable extends React.Component {
           .style('font-size', '13px')
           .style('font-weight', 300)
           .call(d3.axisBottom(x).ticks(5))
+          .call(g => g.select('.tick:last-of-type text').text(`${ranges.xMax}`))
           .selectAll('.domain').remove()
         
         chart.append('text')

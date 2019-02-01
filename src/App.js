@@ -11,33 +11,39 @@ const margin = {
   right: 20,
   bottom: 45
 }
-
-const colors = ['#fdf7e1','#faeaae','#f7d790','#f3b473','#fd8d3c','#fc4e2a','#e31a1c','#b10026']
 const ranges = {
-  xMin: 10,
-  yMin: 80,
+  xMin: 0,
+  yMin: 0,
   xMax: 101,
-  yMax: 121,
+  yMax: 151,
   valueMin: 0,
-  valueMax: 165,
+  valueMax: 100,
 }
 
 const colorThreshold = [
   {
-    color: '#fdf7e1',
-    value: 90
+    value: 0,
+    color: '#3d3940'
   },
   {
-    color: '#faeaae',
-    value: 103
+    value: 50,
+    color: '#fdf7e1'
   },
   {
-    color: '#f7d790',
-    value: 125
+    value: 60,
+    color: '#faeaae'
   },
   {
-    color: '#f3b473',
-    value: 165
+    value: 75,
+    color: 'f7d790'
+  },
+  {
+    value: 88,
+    color: 'f3b473'
+  },
+  {
+    value: 97,
+    color: 'fd8d3c'
   }
 ]
 
@@ -45,7 +51,7 @@ const xAxisLabel = 'X Axis Label'
 const yAxisLabel = 'Y Axis Label'
 const bins  = {
   xBins: 30,
-  yBins: 35
+  yBins: 30
 }
 
 class App extends React.Component {
@@ -63,7 +69,6 @@ class App extends React.Component {
           yAxisLabel={yAxisLabel}
           height={height}
           colorThreshold={colorThreshold}
-          colors={colors}
           ranges={ranges}
           bins={bins}
         />
